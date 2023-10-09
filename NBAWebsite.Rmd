@@ -1,0 +1,92 @@
+---
+title: "NBA"
+author: "Sean Floersch"
+date: "`r Sys.Date()`"
+output:
+  html_document: 
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+    theme: flatly
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(knitr)
+library(rvest)
+library(tidyverse)
+library(optmatch)
+library(stringr)
+library(ggplot2)
+library(e1071)
+library(randomForest)
+library(caret)
+library(gridExtra)
+library(gbm)
+library(neuralnet)
+library(reactable)
+library(DT)
+library(plotly)
+rm(list=ls(all=TRUE)) # clear local memory
+graphics.off() # close figures
+cat("\014") # clear console
+```
+
+# Players {.tabset-dropdown}
+
+```{r}
+players <- read.csv("/Users/seanfloersch/FloStrength/NBAFloStrength/NBAPlayersAT")
+careers <- read.csv("/Users/seanfloersch/FloStrength/NBAFloStrength/NBACareers")
+teams <- read.csv("/Users/seanfloersch/FloStrength/NBAFloStrength/NBATeamsAT")
+```
+
+## Seasons
+
+```{r}
+df <- players
+x<-ggplot(data = df,aes(x=yearID, y = Value)) + geom_point() 
+ggplotly(x)
+```
+
+
+## Careers
+
+```{r}
+df<- careers %>% filter(Value > 0)
+DT:: datatable(df,filter = "top")
+```
+
+# Teams{.tabset .tabset-fade .tabset-pills}
+
+# NBA Changes{.tabset .tabset-fade .tabset-pills}
+
+## Pace 
+
+```{r}
+pace <- teams %>%
+  group_by(yearID) %>%
+  mutate(Pts = mean(PTS)) %>%
+  slice(1)
+ggplot(data = pace, aes(x=yearID,y=Pts)) + geom_point() + geom_line()
+```
+
+## The Three 
+
+```{r}
+threes <- teams %>%
+  group_by(yearID) %>%
+  mutate(Threes = mean(ThPA)) %>%
+  mutate(Twos = mean(TwPA)) %>%
+  mutate(Threes = Threes/(Twos+Threes)) %>%
+  mutate(Twos = 1-Threes) %>%
+  slice(1)
+twos <- threes %>%
+  select(yearID, "Prop"=Twos) %>%
+  mutate(Shot = "Two")
+threes <- threes %>%
+  select(yearID, "Prop"=Threes) %>%
+  mutate(Shot = "Three")
+df<- rbind(twos, threes)
+ggplot(data = df, aes(x=yearID,y=Prop, col =Shot)) + geom_point() + geom_line()
+```
